@@ -5,6 +5,13 @@ import { IntentionModule } from "@/modules/intention";
 import { ResponseModule } from "@/modules/response";
 import { PINECONE_INDEX_NAME } from "@/configuration/pinecone";
 import Anthropic from "@anthropic-ai/sdk";
+import {
+  RESPOND_TO_QUESTION_SYSTEM_PROMPT,
+  RESPOND_TO_HOSTILE_MESSAGE_SYSTEM_PROMPT,
+  RESPOND_TO_CARD_COMPARISON_SYSTEM_PROMPT,
+  RESPOND_TO_CREDIT_SCORE_IMPROVEMENT_PROMPT,
+  RESPOND_TO_CARD_RECOMMENDATION_SYSTEM_PROMPT,
+} from "@/configuration/prompts";
 
 export const maxDuration = 60;
 
