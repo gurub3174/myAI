@@ -5,6 +5,8 @@ import { Formatting } from "./formatting";
 import { LoadingIndicator } from "@/types";
 import Loading from "./loading";
 import { AI_NAME } from "@/configuration/identity";
+import { INITIAL_MESSAGE } from "@/configuration/chat";
+
 
 function AILogo() {
   return (
@@ -72,7 +74,10 @@ export default function ChatMessages({
     indicatorState.length > 0 &&
     messages.length > 0 &&
     messages[messages.length - 1].role === "user";
-
+  const displayMessages =
+    messages.length === 0
+      ? [{ role: "assistant", content: INITIAL_MESSAGE }]
+      : messages;
   return (
     <motion.div
       initial={{ opacity: 0 }}
