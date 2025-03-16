@@ -32,10 +32,10 @@ import {
   RESPOND_TO_QUESTION_BACKUP_SYSTEM_PROMPT,
   RESPOND_TO_QUESTION_SYSTEM_PROMPT,
   RESPOND_TO_RANDOM_MESSAGE_SYSTEM_PROMPT,
+  // NEW specialized prompts:
   RESPOND_TO_CARD_COMPARISON_SYSTEM_PROMPT,
   RESPOND_TO_CREDIT_SCORE_IMPROVEMENT_PROMPT,
   RESPOND_TO_CARD_RECOMMENDATION_SYSTEM_PROMPT,
-  FINANCIAL_LEGAL_DISCLAIMER_PROMPT
 } from "@/configuration/prompts";
 import {
   RANDOM_RESPONSE_PROVIDER,
@@ -141,114 +141,129 @@ export class ResponseModule {
     });
   }
 
-static async respondToQuestion(
-  chat: Chat,
-  providers: AIProviders,
-  index: any,
-  queryType: string // <-- Adding query type
-): Promise<Response> {
-  /**
-   * Respond to the user when they send a QUESTION
-   */
-  const PROVIDER_NAME: ProviderName = QUESTION_RESPONSE_PROVIDER;
-  const MODEL_NAME: string = QUESTION_RESPONSE_MODEL;
+  static async respondToQuestion(
+    chat: Chat,
+    providers: AIProviders,
+    index: any
+  ): Promise<Response> {
+    /**
+     * Respond to the user when they send a QUESTION
+     * 
+     * Minimal modifications: 
+     * 1) Check the last user message for key phrases 
+     * 2) If found, override the default question prompt with a specialized prompt
+     */
+    const PROVIDER_NAME: ProviderName = QUESTION_RESPONSE_PROVIDER;
+    const MODEL_NAME: string = QUESTION_RESPONSE_MODEL;
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      queueIndicator({
-        controller,
-        status: "Figuring out what your answer looks like",
-        icon: "thinking",
-      });
-
-      try {
-        const hypotheticalData: string = await generateHypotheticalData(
-          chat,
-          providers.openai
-        );
-        const { embedding }: { embedding: number[] } =
-          await embedHypotheticalData(hypotheticalData, providers.openai);
-
+    const stream = new ReadableStream({
+      async start(controller) {
         queueIndicator({
           controller,
-          status: "Reading through documents",
-          icon: "searching",
-        });
-
-        const chunks: Chunk[] = await searchForChunksUsingEmbedding(
-          embedding,
-          index
-        );
-        const sources: Source[] = await getSourcesFromChunks(chunks);
-        queueIndicator({
-          controller,
-          status: `Read over ${sources.length} documents`,
-          icon: "documents",
-        });
-
-        const citations: Citation[] = await getCitationsFromChunks(chunks);
-        const contextFromSources = await getContextFromSources(sources);
-
-        // **Determine which prompt to use based on the query type**
-        let systemPrompt = RESPOND_TO_QUESTION_SYSTEM_PROMPT(contextFromSources); // Default
-
-        if (queryType === "compare_cards") {
-          systemPrompt = RESPOND_TO_CARD_COMPARISON_SYSTEM_PROMPT(contextFromSources);
-        } else if (queryType === "credit_score_improvement") {
-          systemPrompt = RESPOND_TO_CREDIT_SCORE_IMPROVEMENT_PROMPT(contextFromSources);
-        } else if (queryType === "card_recommendation") {
-          systemPrompt = RESPOND_TO_CARD_RECOMMENDATION_SYSTEM_PROMPT(contextFromSources);
-        } else {
-          systemPrompt = RESPOND_TO_QUESTION_SYSTEM_PROMPT(contextFromSources); // Default
-        }
-
-        queueIndicator({
-          controller,
-          status: "Coming up with an answer",
+          status: "Figuring out what your answer looks like",
           icon: "thinking",
         });
+        try {
+          // 1) Generate hypothetical data
+          const hypotheticalData: string = await generateHypotheticalData(
+            chat,
+            providers.openai
+          );
+          const { embedding }: { embedding: number[] } =
+            await embedHypotheticalData(hypotheticalData, providers.openai);
 
-        queueAssistantResponse({
-          controller,
-          providers,
-          providerName: PROVIDER_NAME,
-          messages: stripMessagesOfCitations(
-            chat.messages.slice(-HISTORY_CONTEXT_LENGTH)
-          ),
-          model_name: MODEL_NAME,
-          systemPrompt,
-          citations,
-          error_message: DEFAULT_RESPONSE_MESSAGE,
-          temperature: QUESTION_RESPONSE_TEMPERATURE,
-        });
+          queueIndicator({
+            controller,
+            status: "Reading through documents",
+            icon: "searching",
+          });
 
-      } catch (error: any) {
-        console.error("Error in respondToQuestion:", error);
-        queueError({
-          controller,
-          error_message: error.message ?? DEFAULT_RESPONSE_MESSAGE,
-        });
+          // 2) Search Pinecone
+          const chunks: Chunk[] = await searchForChunksUsingEmbedding(
+            embedding,
+            index
+          );
+          const sources: Source[] = await getSourcesFromChunks(chunks);
+          queueIndicator({
+            controller,
+            status: `Read over ${sources.length} documents`,
+            icon: "documents",
+          });
 
-        queueAssistantResponse({
-          controller,
-          providers,
-          providerName: PROVIDER_NAME,
-          messages: [],
-          model_name: MODEL_NAME,
-          systemPrompt: RESPOND_TO_QUESTION_BACKUP_SYSTEM_PROMPT(),
-          citations: [],
-          error_message: DEFAULT_RESPONSE_MESSAGE,
-          temperature: QUESTION_RESPONSE_TEMPERATURE,
-        });
-      }
-    },
-  });
+          const citations: Citation[] = await getCitationsFromChunks(chunks);
+          const contextFromSources = await getContextFromSources(sources);
 
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+          // 3) Default system prompt
+          let systemPrompt = RESPOND_TO_QUESTION_SYSTEM_PROMPT(contextFromSources);
+
+          // 4) Minimal changes: detect key phrases in the user's last message
+          const lastUserMessage =
+            chat.messages[chat.messages.length - 1]?.content.toLowerCase() || "";
+
+          if (
+            lastUserMessage.includes("compare card") ||
+            lastUserMessage.includes("which card is better")
+          ) {
+            systemPrompt = RESPOND_TO_CARD_COMPARISON_SYSTEM_PROMPT(contextFromSources);
+          } else if (
+            lastUserMessage.includes("improve credit score") ||
+            lastUserMessage.includes("increase my credit")
+          ) {
+            systemPrompt = RESPOND_TO_CREDIT_SCORE_IMPROVEMENT_PROMPT(contextFromSources);
+          } else if (
+            lastUserMessage.includes("recommend a credit card") ||
+            lastUserMessage.includes("best credit card for")
+          ) {
+            systemPrompt = RESPOND_TO_CARD_RECOMMENDATION_SYSTEM_PROMPT(contextFromSources);
+          }
+
+          queueIndicator({
+            controller,
+            status: "Coming up with an answer",
+            icon: "thinking",
+          });
+
+          // 5) Provide final response to user
+          queueAssistantResponse({
+            controller,
+            providers,
+            providerName: PROVIDER_NAME,
+            messages: stripMessagesOfCitations(
+              chat.messages.slice(-HISTORY_CONTEXT_LENGTH)
+            ),
+            model_name: MODEL_NAME,
+            systemPrompt,
+            citations,
+            error_message: DEFAULT_RESPONSE_MESSAGE,
+            temperature: QUESTION_RESPONSE_TEMPERATURE,
+          });
+        } catch (error: any) {
+          console.error("Error in respondToQuestion:", error);
+          queueError({
+            controller,
+            error_message: error.message ?? DEFAULT_RESPONSE_MESSAGE,
+          });
+          queueAssistantResponse({
+            controller,
+            providers,
+            providerName: PROVIDER_NAME,
+            messages: [],
+            model_name: MODEL_NAME,
+            systemPrompt: RESPOND_TO_QUESTION_BACKUP_SYSTEM_PROMPT(),
+            citations: [],
+            error_message: DEFAULT_RESPONSE_MESSAGE,
+            temperature: QUESTION_RESPONSE_TEMPERATURE,
+          });
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  }
 }
