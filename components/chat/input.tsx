@@ -7,6 +7,7 @@ import { ArrowUp } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import ChatFooter from "@/components/chat/footer";
+import { MESSAGE_PLACEHOLDER } from "@/configuration/ui
 
 interface ChatInputProps {
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -52,7 +53,7 @@ export default function ChatInput({
                         className="border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setIsFocused(false)}
-                        placeholder="Type your message here..."
+                        placeholder= {MESSAGE_PLACEHOLDER}
                       />
                     </FormControl>
                   </FormItem>
