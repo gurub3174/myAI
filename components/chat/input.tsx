@@ -7,7 +7,7 @@ import { ArrowUp } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import ChatFooter from "@/components/chat/footer";
-import { MESSAGE_PLACEHOLDER } from "@/configuration/ui
+import { MESSAGE_PLACEHOLDER } from "@/configuration/ui";
 
 interface ChatInputProps {
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
