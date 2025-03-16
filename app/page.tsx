@@ -4,6 +4,7 @@ import ChatInput from "@/components/chat/input";
 import ChatMessages from "@/components/chat/messages";
 import useApp from "@/hooks/use-app";
 import ChatHeader from "@/components/chat/header";
+import { useEffect } from "react"; // Import useEffect to run on page load
 
 export default function Chat() {
   const {
@@ -16,6 +17,10 @@ export default function Chat() {
     clearMessages,
   } = useApp();
 
+  useEffect(() => {
+    clearMessages();
+  }, []);
+  
   return (
     <>
       <ChatHeader clearMessages={clearMessages} />
