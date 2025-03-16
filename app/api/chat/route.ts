@@ -103,15 +103,6 @@ export async function POST(req: Request) {
     );
   }
 
-  else if (chat.messages[chat.messages.length - 1].content.toLowerCase().trim() === "hi" ||
-           chat.messages[chat.messages.length - 1].content.toLowerCase().trim() === "hello" ||
-           chat.messages[chat.messages.length - 1].content.toLowerCase().trim() === "what's up") {
-    return new Response(
-      JSON.stringify({ message: INITIAL_MESSAGE }), 
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
   else {
     return ResponseModule.respondToRandomMessage(chat, providers);
   }
