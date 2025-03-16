@@ -55,13 +55,6 @@ function AssistantMessage({ message }: { message: DisplayMessage }) {
   );
 }
 
-function EmptyMessages() {
-  return (
-    <div className="flex flex-col flex-1 p-1 gap-3 justify-center items-center">
-      <p className="text-gray-500">Ask a question to start the conversation</p>
-    </div>
-  );
-}
 
 export default function ChatMessages({
   messages,
