@@ -5,13 +5,6 @@ import { IntentionModule } from "@/modules/intention";
 import { ResponseModule } from "@/modules/response";
 import { PINECONE_INDEX_NAME } from "@/configuration/pinecone";
 import Anthropic from "@anthropic-ai/sdk";
-import {
-  RESPOND_TO_QUESTION_SYSTEM_PROMPT,
-  RESPOND_TO_HOSTILE_MESSAGE_SYSTEM_PROMPT,
-  RESPOND_TO_CARD_COMPARISON_SYSTEM_PROMPT,
-  RESPOND_TO_CREDIT_SCORE_IMPROVEMENT_PROMPT,
-  RESPOND_TO_CARD_RECOMMENDATION_SYSTEM_PROMPT,
-} from "@/configuration/prompts";
 
 export const maxDuration = 60;
 
@@ -64,46 +57,10 @@ export async function POST(req: Request) {
   const intention: Intention = await determineIntention(chat);
 
   if (intention.type === "question") {
-    return ResponseModule.respondToQuestion(
-      chat, 
-      providers, 
-      pineconeIndex, 
-      RESPOND_TO_QUESTION_SYSTEM_PROMPT
-    );
-  } 
-  
-  else if (intention.type === "hostile_message") {
+    return ResponseModule.respondToQuestion(chat, providers, pineconeIndex);
+  } else if (intention.type === "hostile_message") {
     return ResponseModule.respondToHostileMessage(chat, providers);
-  } 
-  
-  else if (intention.type === "compare_cards") {
-    return ResponseModule.respondToQuestion(
-      chat, 
-      providers, 
-      pineconeIndex, 
-      RESPOND_TO_CARD_COMPARISON_SYSTEM_PROMPT
-    );
-  } 
-  
-  else if (intention.type === "credit_score_improvement") {
-    return ResponseModule.respondToQuestion(
-      chat, 
-      providers, 
-      pineconeIndex, 
-      RESPOND_TO_CREDIT_SCORE_IMPROVEMENT_PROMPT
-    );
-  }
-
-  else if (intention.type === "card_recommendation") {
-    return ResponseModule.respondToQuestion(
-      chat, 
-      providers, 
-      pineconeIndex, 
-      RESPOND_TO_CARD_RECOMMENDATION_SYSTEM_PROMPT
-    );
-  }
-
-  else {
+  } else {
     return ResponseModule.respondToRandomMessage(chat, providers);
   }
 }
