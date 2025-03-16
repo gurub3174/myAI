@@ -54,14 +54,58 @@ async function determineIntention(chat: Chat): Promise<Intention> {
 
 export async function POST(req: Request) {
   const { chat } = await req.json();
-
   const intention: Intention = await determineIntention(chat);
 
   if (intention.type === "question") {
-    return ResponseModule.respondToQuestion(chat, providers, pineconeIndex);
-  } else if (intention.type === "hostile_message") {
+    return ResponseModule.respondToQuestion(
+      chat, 
+      providers, 
+      pineconeIndex, 
+      RESPOND_TO_QUESTION_SYSTEM_PROMPT
+    );
+  } 
+  
+  else if (intention.type === "hostile_message") {
     return ResponseModule.respondToHostileMessage(chat, providers);
-  } else {
+  } 
+  
+  else if (intention.type === "compare_cards") {
+    return ResponseModule.respondToQuestion(
+      chat, 
+      providers, 
+      pineconeIndex, 
+      RESPOND_TO_CARD_COMPARISON_SYSTEM_PROMPT
+    );
+  } 
+  
+  else if (intention.type === "credit_score_improvement") {
+    return ResponseModule.respondToQuestion(
+      chat, 
+      providers, 
+      pineconeIndex, 
+      RESPOND_TO_CREDIT_SCORE_IMPROVEMENT_PROMPT
+    );
+  }
+
+  else if (intention.type === "card_recommendation") {
+    return ResponseModule.respondToQuestion(
+      chat, 
+      providers, 
+      pineconeIndex, 
+      RESPOND_TO_CARD_RECOMMENDATION_SYSTEM_PROMPT
+    );
+  }
+
+  else if (chat.messages[chat.messages.length - 1].content.toLowerCase().trim() === "hi" ||
+           chat.messages[chat.messages.length - 1].content.toLowerCase().trim() === "hello" ||
+           chat.messages[chat.messages.length - 1].content.toLowerCase().trim() === "what's up") {
+    return new Response(
+      JSON.stringify({ message: INITIAL_MESSAGE }), 
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  else {
     return ResponseModule.respondToRandomMessage(chat, providers);
   }
 }
